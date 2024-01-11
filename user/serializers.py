@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-
+from django.contrib.auth import get_user_model
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,7 +32,15 @@ class UserLoginSerializer(serializers.Serializer):
     password = serializers.CharField()
 
     def validate(self, data):
-        user = authenticate(username=data.get('email'), password=data.get('password'))
+        try:
+            # Find the user by email
+            user = User.objects.get(email=data.get('email'))
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User with this email does not exist.")
+
+        # Authenticate using the username
+        print(user)
+        user = authenticate(username=user.username, password=data.get('password'))
         if user and user.is_active:
             return user
         raise serializers.ValidationError("Incorrect Credentials")
