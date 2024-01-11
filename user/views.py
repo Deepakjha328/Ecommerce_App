@@ -10,6 +10,10 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+    # def get_queryset(self):
+    #     return super().get_queryset()
+    
+
 class UserRegisterAPIView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = UserRegisterSerializer(data=request.data)
