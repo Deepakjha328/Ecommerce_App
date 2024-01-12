@@ -2,12 +2,15 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-
+from .models import *
 
 class UserSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    def get_name(self, instance):
+        return instance.get_full_name()
     class Meta:
         model = User
-        fields = ['id', 'username', 'email']
+        fields = ['id', 'name','username', 'email']
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
@@ -20,6 +23,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         username = validated_data['full_name'].replace(" ", "").lower()
+        if User.objects.filter(email=validated_data['email'], username=username).exists():
+            raise serializers.ValidationError("This username and email is already exist.")
         user = User.objects.create_user(
             username=username,
             email=validated_data['email'],
@@ -32,7 +37,15 @@ class UserLoginSerializer(serializers.Serializer):
     password = serializers.CharField()
 
     def validate(self, data):
-        user = authenticate(username=data.get('email'), password=data.get('password'))
+        try:
+            # Find the user by email
+            user = User.objects.get(email=data.get('email'))
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User with this email does not exist.")
+
+        # Authenticate using the username
+        print(user)
+        user = authenticate(username=user.username, password=data.get('password'))
         if user and user.is_active:
             return user
         raise serializers.ValidationError("Incorrect Credentials")
